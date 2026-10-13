@@ -43,6 +43,7 @@ enum class GestureAction(
     val label: String,
 ) {
     Drawer("drawer", "app drawer"),
+    Lock("lock", "lock the phone"),
     None("none", "nothing"),
     ;
 
@@ -51,7 +52,7 @@ enum class GestureAction(
     }
 }
 
-/** The actions picked for home's gestures. Swiping up is the only one so far. */
+/** The actions picked for home's gestures: swiping up, and double-tapping an empty part of home. */
 class Gestures(
     context: Context,
 ) {
@@ -67,8 +68,19 @@ class Gestures(
             prefs.edit().putString(SWIPE_UP, action.id).apply()
         }
 
+    private var tap by mutableStateOf(GestureAction.of(prefs.getString(DOUBLE_TAP, null)) ?: GestureAction.None)
+
+    /** Nothing by default, so a double tap only locks or opens something once picked. Saved as it's set. */
+    var doubleTap: GestureAction
+        get() = tap
+        set(action) {
+            tap = action
+            prefs.edit().putString(DOUBLE_TAP, action.id).apply()
+        }
+
     private companion object {
         const val SWIPE_UP = "gesture_swipe_up"
+        const val DOUBLE_TAP = "gesture_double_tap"
     }
 }
 
@@ -107,13 +119,24 @@ internal fun Modifier.homeSwipe(
     val drags =
         when (runtime.gestures.swipeUp) {
             GestureAction.Drawer -> true
+            // Locking is a tap's action: the swipe row leaves it out, and here it drags like None, so the drawer still closes.
+            GestureAction.Lock -> drawerShown
             GestureAction.None -> drawerShown
         }
     // One drag handler, only turned on or off: a new one mid-swipe (as the drawer starts to show) would drop the drag.
     return drawerSwipe(state, enabled && drags)
 }
 
-/** Gesture settings: what swiping up on home does, picked from a dropdown. */
+/** Runs what double-tapping on empty home picked. */
+internal fun GestureAction.onDoubleTap(runtime: Runtime, state: LauncherState) {
+    when (this) {
+        GestureAction.Lock -> runtime.phoneLock.lock()
+        GestureAction.Drawer -> state.toggle()
+        GestureAction.None -> Unit
+    }
+}
+
+/** Gesture settings: what swiping up or double-tapping home does, each picked from a dropdown. */
 @Composable
 fun GesturesScreen(
     runtime: Runtime,
@@ -121,15 +144,18 @@ fun GesturesScreen(
 ) {
     val gestures = runtime.gestures
     OverlayPanel("gestures", onDismiss, contentWidth = ReadingWidth) {
-        GestureRow("swipe up", gestures.swipeUp) { gestures.swipeUp = it }
+        // Locking is a tap's action: a swipe can't run it without firing mid-drawer, so its row leaves it out.
+        GestureRow("swipe up", gestures.swipeUp, options = GestureAction.entries - GestureAction.Lock) { gestures.swipeUp = it }
+        GestureRow("double tap", gestures.doubleTap) { gestures.doubleTap = it }
     }
 }
 
-/** A gesture and the action it runs; tapping the action lists the others under it. */
+/** A gesture and the action it runs; tapping the action lists [options] under it. */
 @Composable
 private fun GestureRow(
     label: String,
     action: GestureAction,
+    options: List<GestureAction> = GestureAction.entries,
     onPick: (GestureAction) -> Unit,
 ) {
     var open by remember { mutableStateOf(false) }
@@ -161,7 +187,7 @@ private fun GestureRow(
                             .frame(2.dp, Palette.accent, Palette.background)
                             .padding(4.dp),
                     ) {
-                        for (option in GestureAction.entries) {
+                        for (option in options) {
                             val current = option == action
                             Row(
                                 Modifier
