@@ -4,6 +4,7 @@ The most important changes in each release. The Play Store notes for a release
 are in `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`.
 Dates are when the build was uploaded to Play.
 
+## 2026-10-28 - docs: fleet STANDARDS.md + AGENTS.md adopted (standards rollout)
 ## 0.9.0 (versionCode 17) – 2026-10-18
 
 - Faces: an owl file can be a whole home screen (`face "name" { }`, owl 10), left of
@@ -188,4 +189,3 @@ Dates are when the build was uploaded to Play.
   widget store, the Android app drawer, and optional Arch Linux with Linux apps,
   terminal widgets and coding agents.
 
-## 2026-10-28 - docs: fleet STANDARDS.md + AGENTS.md adopted (standards rollout)
