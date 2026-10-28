@@ -187,3 +187,5 @@ Dates are when the build was uploaded to Play.
 - First release: Omarchy themes and wallpapers, home screen widgets and the
   widget store, the Android app drawer, and optional Arch Linux with Linux apps,
   terminal widgets and coding agents.
+
+## 2026-10-28 - docs: fleet STANDARDS.md + AGENTS.md adopted (standards rollout)
